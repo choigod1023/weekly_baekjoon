@@ -14,23 +14,23 @@ import requests
 # - True 로 두면 titleKo 가 비어 있지 않은 문제만 사용합니다.
 ONLY_KOREAN_PROBLEMS = True
 
-# 난이도별 문제 개수 설정
-# - 총합이 이번 주에 풀 문제 개수가 됩니다. (현재 4문제)
+# "많이 풀린 문제"의 기준이 되는 최소 AC 유저 수
+# - acceptedUserCount 가 이 값 이상인 문제만 사용하려고 시도합니다.
+MIN_ACCEPTED_USER_COUNT = 1000
+
+# 난이도별 문제 개수 설정 (쉬운 문제 1개, 어려운 문제 1개 = 총 2문제)
 # - solved.ac 기준 level:
-#   - 브론즈: 1~5
-#   - 실버  : 6~10
-#   - 골드  : 11~15
+#   - 쉬운 난이도(easy):   1~8   (브론즈 전체 + 실버 3까지 대략)
+#   - 어려운 난이도(hard): 9~15  (실버 4 이상 ~ 골드 전체)
 DIFFICULTY_DISTRIBUTION = {
-    "bronze": 1,  # 브론즈 1문제
-    "silver": 2,  # 실버 2문제
-    "gold": 1,    # 골드 1문제
+    "easy": 1,   # 쉬운 문제 1개
+    "hard": 1,   # 어려운 문제 1개
 }
 
 # 난이도별 level 범위 매핑
 TIER_RANGES = {
-    "bronze": (1, 5),
-    "silver": (6, 10),
-    "gold": (11, 15),
+    "easy": (1, 8),
+    "hard": (9, 15),
 }
 
 # 한 번에 solved.ac에서 가져올 최대 문제 수
@@ -123,8 +123,14 @@ def fetch_problems_by_tier_range(min_tier: int, max_tier: int, used_ids: set[int
     if ONLY_KOREAN_PROBLEMS:
         items = [p for p in items if p.get("titleKo")]
 
+    # 많이 풀린(AC 유저 수가 일정 이상인) 문제만 우선적으로 사용
+    popular_items = [
+        p for p in items
+        if (p.get("acceptedUserCount") or 0) >= MIN_ACCEPTED_USER_COUNT
+    ]
+
     # 우선 이미 사용한 문제를 제외
-    filtered = [p for p in items if p.get("problemId") not in used_ids]
+    filtered = [p for p in popular_items if p.get("problemId") not in used_ids]
 
     if len(filtered) >= need_count:
         # 충분히 많으면 그 중에서만 뽑기
@@ -134,10 +140,22 @@ def fetch_problems_by_tier_range(min_tier: int, max_tier: int, used_ids: set[int
     # 1차로 filtered 전부 사용
     selected = filtered.copy()
 
-    # 그래도 부족하면, 이미 사용한 문제도 허용해서 items에서 채운다.
+    # 그래도 부족하면, "많이 풀린 문제" 조건을 완화해서 채운다.
     remaining = need_count - len(selected)
     if remaining > 0:
-        # 이미 선택된 문제는 제외하고 랜덤으로 더 뽑기
+        # 1) 아직 선택되지 않았고, used_ids 에도 없는 popular_items 로 한 번 더 시도
+        already_ids = {p.get("problemId") for p in selected}
+        fallback_candidates = [
+            p for p in popular_items
+            if p.get("problemId") not in already_ids and p.get("problemId") not in used_ids
+        ]
+        take = min(remaining, len(fallback_candidates))
+        if take > 0:
+            selected.extend(random.sample(fallback_candidates, take))
+            remaining -= take
+
+    # 아직도 남았다면, popular 조건을 제외하고 전체 items 에서 채운다.
+    if remaining > 0:
         already_ids = {p.get("problemId") for p in selected}
         candidates = [p for p in items if p.get("problemId") not in already_ids]
 
