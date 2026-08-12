@@ -1,5 +1,7 @@
 # Baekjoon Weekly Problem Notifier
 
+**한국어** · [日本語](README.ja.md) · [English](README.en.md)
+
 > solved.ac API로 난이도별 백준 문제를 뽑아 **Discord 웹훅(@everyone)** 으로 주기적으로 보내주는 파이썬 스크립트입니다.
 
 ## 소개
