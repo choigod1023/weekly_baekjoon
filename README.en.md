@@ -112,7 +112,7 @@ weekly_baekjoon/
 | Item | Detail |
 |---|---|
 | **Contribution share** | **100%** (solo development) |
-| **Commits** | 6 / 6 (mine / all human commits) |
+| **Commits** | 7 / 7 (mine / all human commits) |
 | **Contributors** | 1 |
 
-<sub>Contribution share is counted by commit author email; bot and automation commits are excluded.</sub>
+<sub>Counting basis: commits reachable from **every branch** on origin (merge commits and empty commits excluded), counted by commit author email with one person’s multiple addresses merged; bot and automation commits are excluded.</sub>
